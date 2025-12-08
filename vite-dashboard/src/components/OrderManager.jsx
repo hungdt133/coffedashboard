@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
-import { io } from "socket.io-client"; // [MỚI] Import socket
+import { io } from "socket.io-client";
 import "./OrderManager.css";
 
 // Import hình ảnh
@@ -22,15 +22,20 @@ const OrderManager = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [tempStatus, setTempStatus] = useState("");
+  const [notification, setNotification] = useState(null);
+  const [notificationsList, setNotificationsList] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const [filterCity, setFilterCity] = useState("");
+  const [filterDistrict, setFilterDistrict] = useState("");
+  const [filterWard, setFilterWard] = useState("");
+  const [filterPayment, setFilterPayment] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterKeyword, setFilterKeyword] = useState("");
+  const socketRef = useRef(null);
 
   const API_URL = "http://localhost:3000";
-
-  const getOrderId = (order) => {
-    if (!order || !order._id) return "";
-    if (typeof order._id === 'string') return order._id;
-    if (typeof order._id === 'object' && order._id.$oid) return order._id.$oid;
-    return "";
-  };
 
   const getProductImage = (productName) => {
     if (!productName) return imgCaPheDen; 
@@ -61,45 +66,129 @@ const OrderManager = () => {
     return imgCaPheDen;
   };
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_URL}/orders`);
-      
-      const processedOrders = res.data.map(order => ({
-        ...order,
-        orderDate: order.orderDate?.$date ? order.orderDate.$date : order.orderDate
-      }));
+      // Build filter params
+      const params = {};
+      if (filterCity) params.city = filterCity;
+      if (filterDistrict) params.district = filterDistrict;
+      if (filterWard) params.ward = filterWard;
+      if (filterPayment) params.paymentMethod = filterPayment;
+      if (filterDateFrom) params.date_from = filterDateFrom;
+      if (filterDateTo) params.date_to = filterDateTo;
+      if (filterKeyword) params.keyword = filterKeyword;
 
-      const sortedOrders = processedOrders.sort((a, b) => 
+      const res = await axios.get(`${API_URL}/orders/filter`, { params });
+      const sortedOrders = res.data.sort((a, b) => 
         new Date(b.orderDate) - new Date(a.orderDate)
       );
       setOrders(sortedOrders);
     } catch (error) {
       console.error("Lỗi tải đơn hàng:", error);
-      // alert("Không thể kết nối đến server!");
+      alert("Không thể kết nối đến server!");
     } finally {
       setLoading(false);
+    }
+  }, [API_URL, filterCity, filterDistrict, filterWard, filterPayment, filterDateFrom, filterDateTo, filterKeyword]);
+  
+  // request Notification permission on mount
+  useEffect(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+      Notification.requestPermission().then(() => {});
+    }
+  }, []);
+
+  const playBeep = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = 880;
+      g.gain.value = 0.05;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      setTimeout(() => { o.stop(); ctx.close(); }, 200);
+    } catch (e) {
+      // ignore audio errors
     }
   };
 
   useEffect(() => {
     fetchOrders();
 
-    // [MỚI] Lắng nghe socket để cập nhật danh sách realtime
-    const socket = io(API_URL);
-    socket.on("newOrder", (newOrder) => {
-        // Xử lý date format cho giống cấu trúc hiện tại nếu cần
-        const processedOrder = {
-            ...newOrder,
-            orderDate: newOrder.orderDate?.$date ? newOrder.orderDate.$date : newOrder.orderDate
-        };
-        // Thêm đơn mới vào đầu danh sách
-        setOrders((prevOrders) => [processedOrder, ...prevOrders]);
+    // Kết nối Socket.io
+    socketRef.current = io(API_URL, {
+      transports: ["websocket", "polling"]
     });
 
-    return () => socket.disconnect();
-  }, []);
+    socketRef.current.on("connect", () => {
+      console.log("✅ Connected to Socket.io server");
+    });
+
+    // Listen event đơn hàng mới
+    socketRef.current.on("newOrder", (data) => {
+      console.log("📦 New order received:", data);
+      
+      // Hiển thị notification
+      const note = {
+        id: data.order?._id || Date.now().toString(),
+        message: data.message || "Có đơn hàng mới!",
+        order: data.order,
+        timestamp: data.timestamp || new Date().toISOString(),
+      };
+
+      setNotificationsList((prev) => [note, ...prev]);
+      setUnreadCount((c) => c + 1);
+      setNotification({ ...note });
+
+      // Desktop notification + sound
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try {
+          const title = note.message || 'Có đơn hàng mới!';
+          const money = note.order ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(note.order.totalAmount || 0) : '';
+          const body = note.order ? `Mã: #${note.order._id ? note.order._id.slice(-6).toUpperCase() : 'N/A'} • Tổng: ${money}` : '';
+          new Notification(title, { body });
+        } catch (e) {}
+      }
+      playBeep();
+
+      // Tự động refresh danh sách đơn hàng
+      fetchOrders();
+
+      // Tự động ẩn notification sau 5 giây
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+    });
+
+    socketRef.current.on("disconnect", () => {
+      console.log("❌ Disconnected from Socket.io server");
+    });
+
+    // Cleanup khi component unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [fetchOrders]);
+
+  const handleBellClick = () => {
+    setShowNotifPanel((s) => !s);
+    setUnreadCount(0);
+  };
+
+  const handleOpenFromNotif = (note) => {
+    if (note && note.order) {
+      openModal(note.order);
+      setShowNotifPanel(false);
+    }
+  };
+
+  const handleDismissNotif = (id) => {
+    setNotificationsList((prev) => prev.filter(n => n.id !== id));
+  };
 
   const openModal = (order) => {
     setSelectedOrder(order);
@@ -112,23 +201,18 @@ const OrderManager = () => {
 
   const updateStatus = async () => {
     if (!selectedOrder) return;
-    const orderId = getOrderId(selectedOrder);
-
     try {
-      await axios.patch(`${API_URL}/orders/${orderId}/status`, {
+      await axios.patch(`${API_URL}/orders/${selectedOrder._id}/status`, {
         status: tempStatus
       });
-
       alert(`Đã cập nhật đơn hàng thành: ${tempStatus}`);
-      
       const updatedOrders = orders.map(ord => 
-        getOrderId(ord) === orderId ? { ...ord, status: tempStatus } : ord
+        ord._id === selectedOrder._id ? { ...ord, status: tempStatus } : ord
       );
       setOrders(updatedOrders);
       closeModal();
     } catch (error) {
-      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message;
-      alert("Lỗi cập nhật: " + errorMsg);
+      alert("Lỗi cập nhật: " + (error.response?.data?.error || error.message));
     }
   };
 
@@ -137,7 +221,6 @@ const OrderManager = () => {
   };
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return "N/A";
     return new Date(timestamp).toLocaleString("vi-VN", {
       hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric"
     });
@@ -150,19 +233,107 @@ const OrderManager = () => {
       case "Delivering": return "status-delivering";
       case "Delivered": return "status-delivered";
       case "Cancelled": return "status-cancelled";
-      case "Unpaid": return "status-pending";
+      case "Completed": return "status-delivered";
       default: return "";
     }
   };
 
   return (
     <div className="order-container">
-      <h2 className="page-title">📦 Quản Lý Đơn Hàng</h2>
+
+      <div className="order-header">
+        <h2 className="page-title">📦 Quản Lý Đơn Hàng</h2>
+
+        <div className="notif-area">
+          <button className="notif-bell" onClick={handleBellClick} aria-label="Thông báo">
+            <span className="notif-icon">🔔</span>
+            {unreadCount > 0 && (<span className="notif-badge">{unreadCount}</span>)}
+          </button>
+
+          {showNotifPanel && (
+            <div className="notif-panel">
+              <div className="notif-panel-header">
+                <strong>Thông báo</strong>
+                <button className="notif-clear" onClick={() => setNotificationsList([])}>Xóa tất cả</button>
+              </div>
+              {notificationsList.length === 0 ? (
+                <div className="notif-empty">Không có thông báo</div>
+              ) : (
+                notificationsList.map((note) => (
+                  <div key={note.id} className="notif-item">
+                    <div className="notif-item-icon">📦</div>
+                    <div className="notif-item-body">
+                      <div className="notif-item-title">{note.message}</div>
+                      {note.order && (
+                        <div className="notif-item-details">
+                          <div>Mã: #{note.order._id ? note.order._id.slice(-6).toUpperCase() : 'N/A'}</div>
+                          <div>Khách: {note.order.deliveryAddress?.fullName || 'Khách vãng lai'}</div>
+                          <div>Tổng: {formatMoney(note.order.totalAmount || 0)}</div>
+                        </div>
+                      )}
+                      <div className="notif-item-actions">
+                        <button className="btn-notif-view" onClick={() => handleOpenFromNotif(note)}>Xem</button>
+                        <button className="btn-notif-close" onClick={() => handleDismissNotif(note.id)}>Đóng</button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Notification khi có đơn hàng mới */}
+      {notification && (
+        <div className="notification-toast">
+          <div className="notification-content">
+            <div className="notification-icon">🔔</div>
+            <div className="notification-text">
+              <strong>{notification.message}</strong>
+              {notification.order && (
+                <div className="notification-details">
+                  <span>Mã đơn: #{notification.order._id ? notification.order._id.slice(-6).toUpperCase() : "N/A"}</span>
+                  <span>•</span>
+                  <span>Khách: {notification.order.deliveryAddress?.fullName || "Khách vãng lai"}</span>
+                  <span>•</span>
+                  <span>Tổng: {formatMoney(notification.order.totalAmount || 0)}</span>
+                </div>
+              )}
+            </div>
+            <button 
+              className="notification-close" 
+              onClick={() => setNotification(null)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="loading">Đang tải dữ liệu...</div>
       ) : (
-        <div className="table-responsive">
+        <>
+          <div className="filters-bar">
+            <input type="text" placeholder="Tìm kiếm (mã, tên, số điện thoại, món)" value={filterKeyword} onChange={(e) => setFilterKeyword(e.target.value)} />
+            <input type="text" placeholder="Thành phố" value={filterCity} onChange={(e) => setFilterCity(e.target.value)} />
+            <input type="text" placeholder="Quận/Huyện" value={filterDistrict} onChange={(e) => setFilterDistrict(e.target.value)} />
+            <input type="text" placeholder="Phường/Xã" value={filterWard} onChange={(e) => setFilterWard(e.target.value)} />
+            <select value={filterPayment} onChange={(e) => setFilterPayment(e.target.value)}>
+              <option value="">Phương thức thanh toán</option>
+              <option value="Cash">Tiền mặt</option>
+              <option value="VNPAY">VNPAY</option>
+              <option value="MOMO">MOMO</option>
+              <option value="Card">Thẻ</option>
+            </select>
+            <label className="date-label">Từ: <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} /></label>
+            <label className="date-label">Đến: <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} /></label>
+            <button className="btn-apply-filters" onClick={() => fetchOrders()}>Áp dụng</button>
+            <button className="btn-clear-filters" onClick={() => { setFilterCity(""); setFilterDistrict(""); setFilterWard(""); setFilterPayment(""); setFilterDateFrom(""); setFilterDateTo(""); setFilterKeyword(""); fetchOrders(); }}>Xóa</button>
+          </div>
+
+          <div className="table-responsive">
           <table className="order-table">
             <thead>
               <tr>
@@ -176,8 +347,8 @@ const OrderManager = () => {
             </thead>
             <tbody>
               {orders.map((order) => (
-                <tr key={getOrderId(order)}>
-                  <td>#{getOrderId(order).slice(-6).toUpperCase()}</td>
+                <tr key={order._id}>
+                  <td>#{order._id ? order._id.slice(-6).toUpperCase() : "N/A"}</td>
                   <td>{formatDate(order.orderDate)}</td>
                   <td>
                     <div className="customer-info">
@@ -202,13 +373,14 @@ const OrderManager = () => {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {selectedOrder && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Chi tiết đơn: #{getOrderId(selectedOrder).slice(-6).toUpperCase()}</h3>
+              <h3>Chi tiết đơn: #{selectedOrder._id ? selectedOrder._id.slice(-6).toUpperCase() : "N/A"}</h3>
               <span className="close-btn" onClick={closeModal}>&times;</span>
             </div>
 
@@ -217,10 +389,7 @@ const OrderManager = () => {
                 <h4>📍 Thông tin giao hàng</h4>
                 <p><strong>Người nhận:</strong> {selectedOrder.deliveryAddress?.fullName}</p>
                 <p><strong>SĐT:</strong> {selectedOrder.deliveryAddress?.phone}</p>
-                <p><strong>Địa chỉ:</strong> {selectedOrder.deliveryAddress?.street ? 
-                    `${selectedOrder.deliveryAddress.street}, ${selectedOrder.deliveryAddress.ward}, ${selectedOrder.deliveryAddress.district}, ${selectedOrder.deliveryAddress.city}` 
-                    : "Chưa cập nhật địa chỉ chi tiết"}
-                </p>
+                <p><strong>Địa chỉ:</strong> {selectedOrder.deliveryAddress?.street}, {selectedOrder.deliveryAddress?.ward}, {selectedOrder.deliveryAddress?.district}, {selectedOrder.deliveryAddress?.city}</p>
                 <p><strong>Ghi chú đơn:</strong> <span className="note-text">{selectedOrder.note || "Không có"}</span></p>
               </div>
 
@@ -255,7 +424,7 @@ const OrderManager = () => {
 
                            {item.itemNote && (
                                <div style={{color: '#e67e22', fontStyle: 'italic', fontSize: '0.85rem', marginTop: '4px'}}>
-                                    Note: {item.itemNote}
+                                   Note: {item.itemNote}
                                </div>
                            )}
                         </div>
@@ -289,6 +458,7 @@ const OrderManager = () => {
                         <option value="Confirmed">✅ Đã xác nhận (Confirmed)</option>
                         <option value="Delivering">🚚 Đang giao (Delivering)</option>
                         <option value="Delivered">🎁 Đã giao (Delivered)</option>
+                        <option value="Completed">🏁 Hoàn thành (Completed)</option>
                         <option value="Cancelled">❌ Hủy đơn (Cancelled)</option>
                     </select>
                     <button className="btn-save" onClick={updateStatus}>Lưu Trạng Thái</button>

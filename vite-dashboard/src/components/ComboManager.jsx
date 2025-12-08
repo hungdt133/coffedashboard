@@ -8,7 +8,6 @@ const ComboManager = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingCombo, setEditingCombo] = useState(null);
   
-  // State form data
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -21,17 +20,13 @@ const ComboManager = () => {
 
   const API_URL = "http://localhost:3000";
 
-  // --- 1. FETCH DATA ---
   const fetchCombos = async () => {
     try {
-      setLoading(true);
       const res = await axios.get(`${API_URL}/combos`);
-      // Đảo ngược mảng để combo mới nhất lên đầu (nếu backend chưa sort)
       const sortedCombos = Array.isArray(res.data) ? res.data.reverse() : [];
       setCombos(sortedCombos);
     } catch (error) {
-      console.error("❌ Lỗi tải combo:", error);
-      // alert("Không thể kết nối đến server!");
+      console.error("Lỗi tải combo:", error);
     } finally {
       setLoading(false);
     }
@@ -41,7 +36,6 @@ const ComboManager = () => {
     fetchCombos();
   }, []);
 
-  // --- 2. FORM HANDLERS ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -71,13 +65,11 @@ const ComboManager = () => {
     e.preventDefault();
     try {
       if (editingCombo) {
-        // Update
         await axios.put(`${API_URL}/combos/${editingCombo._id}`, formData);
-        alert("✅ Cập nhật combo thành công!");
+        alert("✅ Cập nhật thành công!");
       } else {
-        // Create
         await axios.post(`${API_URL}/combos`, formData);
-        alert("✅ Tạo combo thành công!");
+        alert("✅ Tạo mới thành công!");
       }
       resetForm();
       fetchCombos();
@@ -98,7 +90,6 @@ const ComboManager = () => {
       items: combo.items || [],
     });
     setShowForm(true);
-    // Cuộn lên đầu trang form
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -106,7 +97,7 @@ const ComboManager = () => {
     if (window.confirm("Bạn chắc chắn muốn xóa combo này?")) {
       try {
         await axios.delete(`${API_URL}/combos/${id}`);
-        alert("✅ Xóa combo thành công!");
+        alert("✅ Đã xóa!");
         fetchCombos();
       } catch (error) {
         alert("❌ Lỗi xóa: " + (error.response?.data?.error || error.message));
@@ -132,12 +123,6 @@ const ComboManager = () => {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(amount);
   };
 
-  // Tính giá sau giảm (cho hiển thị)
-  const calculateDiscountedPrice = (price, discount) => {
-    if (!discount || discount <= 0) return price;
-    return price * (1 - discount / 100);
-  };
-
   return (
     <div className="combo-container">
       <h2 className="page-title">🎁 Quản Lý Combo</h2>
@@ -146,7 +131,6 @@ const ComboManager = () => {
         {showForm ? "❌ Đóng Form" : "➕ Thêm Combo Mới"}
       </button>
 
-      {/* --- FORM SECTION --- */}
       {showForm && (
         <div className="combo-form">
           <h3>{editingCombo ? "✏️ Chỉnh Sửa Combo" : "➕ Tạo Combo Mới"}</h3>
@@ -169,7 +153,6 @@ const ComboManager = () => {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="Mô tả chi tiết combo"
                 rows="3"
               />
             </div>
@@ -193,7 +176,6 @@ const ComboManager = () => {
                   name="basePrice"
                   value={formData.basePrice}
                   onChange={handleInputChange}
-                  placeholder="0"
                   required
                 />
               </div>
@@ -205,7 +187,6 @@ const ComboManager = () => {
                   name="discount"
                   value={formData.discount}
                   onChange={handleInputChange}
-                  placeholder="0"
                   min="0"
                   max="100"
                 />
@@ -223,49 +204,36 @@ const ComboManager = () => {
               />
             </div>
 
-            {/* --- Items List Input --- */}
             <div className="items-section">
               <h4>📦 Sản phẩm trong Combo</h4>
               {formData.items.length === 0 ? (
-                <p className="no-items">Chưa có sản phẩm. Nhấn nút bên dưới để thêm!</p>
+                <p className="no-items">Chưa có sản phẩm.</p>
               ) : (
-                <div className="items-list-input">
+                <div className="items-list">
                   {formData.items.map((item, index) => (
-                    <div key={`input-${index}`} className="item-input-row">
+                    <div key={index} className="item-input-row">
                       <input
                         type="text"
-                        placeholder="Tên sản phẩm (Vd: Cà phê đen)"
+                        placeholder="Tên sản phẩm"
                         value={item.productName}
-                        onChange={(e) =>
-                          handleItemChange(index, "productName", e.target.value)
-                        }
+                        onChange={(e) => handleItemChange(index, "productName", e.target.value)}
                       />
                       <input
                         type="number"
                         placeholder="SL"
                         value={item.quantity}
-                        onChange={(e) =>
-                          handleItemChange(index, "quantity", e.target.value)
-                        }
+                        onChange={(e) => handleItemChange(index, "quantity", e.target.value)}
                         min="1"
                         style={{ width: '70px' }}
                       />
-                      <button
-                        type="button"
-                        className="btn-remove-item"
-                        onClick={() => handleRemoveItem(index)}
-                      >
+                      <button type="button" className="btn-remove-item" onClick={() => handleRemoveItem(index)}>
                         🗑️
                       </button>
                     </div>
                   ))}
                 </div>
               )}
-              <button
-                type="button"
-                className="btn-add-item"
-                onClick={handleAddItem}
-              >
+              <button type="button" className="btn-add-item" onClick={handleAddItem}>
                 ➕ Thêm dòng sản phẩm
               </button>
             </div>
@@ -282,48 +250,37 @@ const ComboManager = () => {
         </div>
       )}
 
-      {/* --- LIST SECTION --- */}
       {loading ? (
         <div className="loading">Đang tải dữ liệu...</div>
       ) : combos.length === 0 ? (
-        <div className="empty-state">📭 Chưa có combo nào. Hãy tạo combo mới!</div>
+        <div className="empty-state">📭 Chưa có combo nào.</div>
       ) : (
         <div className="combo-grid">
           {combos.map((combo, index) => (
-            // --- FIX LỖI DUPLICATE KEY TẠI ĐÂY ---
-            // Sử dụng kết hợp ID và Index để đảm bảo key luôn duy nhất
-            <div key={combo._id ? `${combo._id}-${index}` : index} className="combo-card">
-              
-              {/* Hình ảnh */}
+            <div key={combo._id} className="combo-card">
               <div className="combo-image-container">
                 {combo.image_url ? (
                    <img src={combo.image_url} alt={combo.name} className="combo-image" />
                 ) : (
                    <div className="no-image">No Image</div>
                 )}
-                
                 {combo.discount > 0 && (
-                  <div className="discount-badge-large">
-                    -{combo.discount}%
-                  </div>
+                  <div className="discount-badge-large">-{combo.discount}%</div>
                 )}
               </div>
 
               <div className="combo-info">
                 <h3>{combo.name}</h3>
-                <p className="category">
-                  <span className="category-badge">{combo.category || "Combo"}</span>
-                </p>
+                <p className="category"><span className="category-badge">{combo.category}</span></p>
                 <p className="description">{combo.description}</p>
 
-                {/* Danh sách món trong combo */}
-                {combo.items && combo.items.length > 0 && (
+                {combo.items?.length > 0 && (
                   <div className="combo-items">
                     <strong>📦 Bao gồm:</strong>
                     <ul>
                       {combo.items.map((item, idx) => (
-                        <li key={`${combo._id}-item-${idx}`}>
-                          <span style={{fontWeight:'bold', color:'#e74c3c'}}>{item.quantity}x</span> {item.productName}
+                        <li key={idx}>
+                          <b>{item.quantity}x</b> {item.productName}
                         </li>
                       ))}
                     </ul>
@@ -333,12 +290,8 @@ const ComboManager = () => {
                 <div className="price-section">
                   {combo.discount > 0 ? (
                     <>
-                      <span className="original-price">
-                        {formatMoney(combo.basePrice)}
-                      </span>
-                      <span className="discounted-price">
-                        {formatMoney(calculateDiscountedPrice(combo.basePrice, combo.discount))}
-                      </span>
+                      <span className="original-price">{formatMoney(combo.basePrice)}</span>
+                      <span className="discounted-price">{formatMoney(combo.discountedPrice)}</span>
                     </>
                   ) : (
                     <span className="discounted-price">{formatMoney(combo.basePrice)}</span>
@@ -346,18 +299,8 @@ const ComboManager = () => {
                 </div>
 
                 <div className="combo-actions">
-                  <button
-                    className="btn-edit"
-                    onClick={() => handleEditCombo(combo)}
-                  >
-                    ✏️ Sửa
-                  </button>
-                  <button
-                    className="btn-delete"
-                    onClick={() => handleDeleteCombo(combo._id)}
-                  >
-                    🗑️ Xóa
-                  </button>
+                  <button className="btn-edit" onClick={() => handleEditCombo(combo)}>✏️ Sửa</button>
+                  <button className="btn-delete" onClick={() => handleDeleteCombo(combo._id)}>🗑️ Xóa</button>
                 </div>
               </div>
             </div>

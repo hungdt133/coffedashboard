@@ -1,11 +1,11 @@
 /* --- LAYOUT CHUNG --- */
 .order-container {
-    max-width: 98%; /* Mở rộng gần full màn hình */
-    margin: 20px auto;
+    max-width: 1200px;
+    margin: 40px auto;
     padding: 30px;
-    background-color: #ffffff;
+    background-color: #ffffff; /* Thêm nền trắng để nổi bật trên nền web */
     border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08); /* Đổ bóng nhẹ tạo chiều sâu */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -19,9 +19,71 @@
     letter-spacing: 1px;
 }
 
+/* Header container: align title and notification bell inside page width */
+.order-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.notif-area {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.notif-bell {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    padding: 6px;
+    border-radius: 6px;
+}
+
+.notif-icon { font-size: 22px; }
+
+.notif-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #e74c3c;
+    color: #fff;
+    border-radius: 12px;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.notif-panel {
+    position: absolute;
+    right: 0;
+    top: 40px;
+    width: 360px;
+    max-height: 420px;
+    overflow: auto;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    border-radius: 8px;
+    z-index: 50;
+}
+
+.notif-panel-header { padding: 10px; border-bottom: 1px solid #eee; display:flex; justify-content:space-between; align-items:center }
+.notif-clear { background: transparent; border: none; color: #888; cursor: pointer }
+.notif-empty { padding: 12px; color:#666 }
+.notif-item { padding: 10px; border-bottom: 1px solid #f5f5f5; display:flex; gap:8px; align-items:flex-start }
+.notif-item-icon { font-size: 18px }
+.notif-item-body { flex:1 }
+.notif-item-title { font-weight:600 }
+.notif-item-details { font-size:13px; color:#333; margin-top:6px }
+.notif-item-actions { margin-top:8px; display:flex; gap:8px }
+.btn-notif-view { background: #2d8cf0; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; cursor:pointer }
+.btn-notif-close { background:#eee; border:none; padding:6px 10px; border-radius:6px; cursor:pointer }
+
 /* --- BẢNG DANH SÁCH --- */
 .table-responsive {
-    overflow-x: auto;
+    overflow-x: auto; /* Cho phép cuộn ngang trên mobile */
     border-radius: 8px;
     border: 1px solid #e0e0e0;
 }
@@ -30,9 +92,10 @@
     width: 100%;
     border-collapse: collapse;
     background: white;
-    min-width: 800px;
+    min-width: 800px; /* Đảm bảo bảng không bị co quá nhỏ */
 }
 
+/* Header bảng */
 .order-table th {
     background-color: #34495e;
     color: #ffffff;
@@ -42,23 +105,17 @@
     text-transform: uppercase;
     font-size: 0.9rem;
     letter-spacing: 0.5px;
-    white-space: nowrap; /* Giữ tiêu đề trên 1 dòng */
 }
 
+/* Các ô dữ liệu */
 .order-table td {
     padding: 15px;
     border-bottom: 1px solid #eee;
     vertical-align: middle;
     color: #444;
-    white-space: nowrap; /* Giữ nội dung ngắn trên 1 dòng */
 }
 
-/* Cho phép cột Khách hàng và Thao tác xuống dòng nếu cần */
-.order-table td:nth-child(3), 
-.order-table td:last-child {
-    white-space: normal;
-}
-
+/* Hiệu ứng dòng chẵn/lẻ và hover */
 .order-table tbody tr:nth-child(even) {
     background-color: #f8f9fa;
 }
@@ -68,6 +125,7 @@
     transition: background-color 0.2s ease;
 }
 
+/* Cột thông tin khách hàng */
 .customer-info strong {
     color: #2c3e50;
     font-size: 1rem;
@@ -79,6 +137,7 @@
     margin-top: 4px;
 }
 
+/* Cột tiền */
 .money {
     font-weight: bold;
     color: #e74c3c;
@@ -125,23 +184,23 @@
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.7); /* Nền tối hơn để tập trung vào modal */
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px); /* Làm mờ nền phía sau */
 }
 
 .modal-content {
     background: white;
-    width: 95%; /* Popup rộng hơn */
-    max-width: 1200px; /* Max width to hơn */
+    width: 90%;
+    max-width: 900px;
     border-radius: 12px;
     box-shadow: 0 15px 40px rgba(0,0,0,0.2);
     overflow: hidden;
     animation: slideIn 0.3s ease-out;
-    max-height: 95vh;
+    max-height: 90vh;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -153,7 +212,7 @@
 }
 
 .modal-header {
-    background: #34495e;
+    background: #34495e; /* Header modal cùng màu với header bảng */
     color: white;
     padding: 20px 30px;
     display: flex;
@@ -184,16 +243,18 @@
     padding: 30px;
     background-color: #f8f9fa;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr; /* Chia 2 cột nếu màn hình to */
     gap: 20px;
 }
 
+/* Responsive modal: Trên mobile thì dồn về 1 cột */
 @media (max-width: 768px) {
     .modal-body {
         grid-template-columns: 1fr;
     }
 }
 
+/* Các box thông tin trong modal */
 .info-group, .items-group, .status-action {
     background: #fff;
     border: 1px solid #e9ecef;
@@ -203,7 +264,7 @@
 }
 
 .items-group {
-    grid-column: span 1;
+    grid-column: span 1; /* Nếu cần items rộng hơn có thể chỉnh span 2 */
 }
 
 .info-group h4, .items-group h4, .status-action h4 {
@@ -214,6 +275,11 @@
     margin-bottom: 20px;
     color: #2c3e50;
     font-size: 1.1rem;
+}
+
+.note-text {
+    font-style: italic;
+    color: #e67e22;
 }
 
 /* List món ăn */
@@ -255,6 +321,7 @@
     color: #2c3e50;
 }
 
+/* Tổng tiền modal */
 .order-summary {
     margin-top: 20px;
     border-top: 2px solid #eee;
@@ -268,8 +335,17 @@
     font-size: 0.95rem;
 }
 
+.sum-row.total {
+    font-size: 1.3rem;
+    color: #e74c3c;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+/* Action cập nhật trạng thái */
 .status-action {
-    grid-column: 1 / -1;
+    grid-column: 1 / -1; /* Luôn nằm full chiều rộng ở dưới cùng */
 }
 
 .action-row {
@@ -311,75 +387,131 @@
     box-shadow: 0 6px 10px rgba(39, 174, 96, 0.3);
 }
 
-.toppings {
-    display: block;     
-    margin-top: 4px;    
-    font-weight: 600;    
-    color: #d35400;      
-    font-size: 0.85rem;
+/* --- NOTIFICATION TOAST --- */
+.notification-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    animation: slideInRight 0.3s ease-out;
+    max-width: 500px;
 }
 
-/* FIX MÀU CHỮ */
-.info-group, .info-group p {
-    color: #333333 !important;
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
-.info-group strong {
-    color: #000000 !important;
-}
-
-.note-text {
-    color: #d35400 !important;
-    font-weight: 600;
-    font-style: italic;
-}
-
-.order-summary, .sum-row span {
-    color: #333333 !important;
-    font-weight: 500;
-}
-
-.sum-row.total span {
-    color: #e74c3c !important;
-    font-size: 1.4rem;
-    font-weight: 800;
-}
-
-/* --- ITEM NAME, QTY & SIZE TAGS --- */
-.item-name-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-    flex-wrap: wrap;
-}
-
-.qty-tag {
-    background-color: #e74c3c;
+.notification-content {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    font-weight: 700;
-    font-size: 0.9rem;
-    padding: 2px 8px;
-    border-radius: 6px;
-    min-width: 30px;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+    padding: 20px 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    position: relative;
 }
 
-.item-name-row strong {
-    font-size: 1.05rem;
-    color: #2c3e50;
+.notification-icon {
+    font-size: 2rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.notification-text {
     flex: 1;
 }
 
-.size-tag {
-    background-color: #ecf0f1;
-    color: #2c3e50;
-    border: 1px solid #bdc3c7;
-    font-size: 0.8rem;
+.notification-text strong {
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+}
+
+.notification-details {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+    opacity: 0.95;
+    margin-top: 5px;
+}
+
+.notification-details span {
+    display: inline-block;
+}
+
+.notification-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+    padding: 0;
+}
+
+.notification-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #7f8c8d;
+    font-size: 1.1rem;
+}
+
+/* --- FILTERS BAR --- */
+.filters-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: 18px 0;
+}
+.filters-bar input[type="text"], .filters-bar input[type="date"], .filters-bar select {
+    padding: 8px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    outline: none;
+    min-width: 140px;
+}
+.filters-bar .date-label input[type="date"] { min-width: 160px; }
+.filters-bar .btn-apply-filters, .filters-bar .btn-clear-filters {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+.filters-bar .btn-apply-filters { background: #2d8cf0; color: white; }
+.filters-bar .btn-clear-filters { background: #eee; color: #333; }
+
+@media (max-width: 900px) {
+    .filters-bar input[type="text"], .filters-bar select { min-width: 120px; }
 }
