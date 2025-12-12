@@ -5,30 +5,60 @@ const Order = require("../models/orders.model");
 // --- 1. API THỐNG KÊ DOANH THU (MỚI) ---
 router.get("/stats/revenue", async (req, res) => {
   try {
-    // Thống kê doanh thu theo ngày (Chỉ tính đơn Delivered)
-    const dailyStats = await Order.aggregate([
+    const { type = 'day' } = req.query; // 'day', 'month', 'year'
+
+    // Xác định format date dựa trên type
+    let dateFormat;
+    if (type === 'month') dateFormat = "%Y-%m";
+    else if (type === 'year') dateFormat = "%Y";
+    else dateFormat = "%Y-%m-%d";
+
+    // Thống kê doanh thu theo thời gian (Chỉ tính đơn Delivered)
+    const chartData = await Order.aggregate([
       { $match: { status: "Delivered" } },
       {
         $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$orderDate" } },
-          totalRevenue: { $sum: "$totalAmount" },
+          _id: { $dateToString: { format: dateFormat, date: "$orderDate" } },
+          revenue: { $sum: "$totalAmount" },
           count: { $sum: 1 }
         }
       },
-      { $sort: { _id: 1 } } // Sắp xếp theo ngày tăng dần
+      { $sort: { _id: 1 } } // Sắp xếp theo thời gian tăng dần
     ]);
 
-    // Thống kê tỷ lệ trạng thái đơn hàng
-    const statusStats = await Order.aggregate([
+    // Thống kê tổng quan
+    const summaryResult = await Order.aggregate([
+      { $match: { status: "Delivered" } },
       {
         $group: {
-          _id: "$status",
-          count: { $sum: 1 }
+          _id: null,
+          totalRevenue: { $sum: "$totalAmount" },
+          totalOrders: { $sum: 1 }
         }
       }
     ]);
 
-    res.json({ daily: dailyStats, status: statusStats });
+    const summary = summaryResult.length > 0 ? summaryResult[0] : { totalRevenue: 0, totalOrders: 0 };
+
+    // Top 5 sản phẩm bán chạy
+    const topProducts = await Order.aggregate([
+      { $match: { status: "Delivered" } },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.name",
+          totalSold: { $sum: "$items.quantity" }
+        }
+      },
+      { $sort: { totalSold: -1 } },
+      { $limit: 5 }
+    ]);
+
+    res.json({
+      summary,
+      chartData,
+      topProducts
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

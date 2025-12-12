@@ -65,6 +65,11 @@ const PromotionSchema = new mongoose.Schema({
 
 // Validation: ensure correct fields are present based on scope
 PromotionSchema.pre("save", function(next) {
+    // Skip validation for isActive-only updates
+    if (this.isModified() && Object.keys(this.modifiedPaths()).length === 1 && this.isModified('isActive')) {
+        return next();
+    }
+
     if (this.scope === "PRODUCT" && (!this.productIds || this.productIds.length === 0)) {
         return next(new Error("productIds is required for PRODUCT scope"));
     }

@@ -22,6 +22,7 @@ const PromotionManager = () => {
     startDate: '',
     endDate: '',
     minOrderTotal: '',
+    isActive: true,
     productIds: [],
     categories: [],
     comboItems: []
@@ -99,6 +100,7 @@ const PromotionManager = () => {
       startDate: '',
       endDate: '',
       minOrderTotal: '',
+      isActive: true,
       productIds: [],
       categories: [],
       comboItems: []
@@ -117,6 +119,7 @@ const PromotionManager = () => {
       startDate: promotion.startDate.split('T')[0],
       endDate: promotion.endDate.split('T')[0],
       minOrderTotal: promotion.minOrderTotal?.toString() || '',
+      isActive: promotion.isActive !== undefined ? promotion.isActive : true,
       productIds: promotion.productIds || [],
       categories: promotion.categories || [],
       comboItems: promotion.comboItems || []
@@ -125,15 +128,15 @@ const PromotionManager = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this promotion?')) {
-      try {
-        await axios.delete(`http://localhost:3000/promotions/${id}`);
-        toast.success('Promotion deleted successfully');
-        fetchPromotions();
-      } catch (error) {
-        toast.error('Failed to delete promotion');
-      }
+  const handleToggleActive = async (promotionId, currentStatus) => {
+    try {
+      await axios.put(`http://localhost:3000/promotions/${promotionId}`, {
+        isActive: !currentStatus
+      });
+      toast.success(`Promotion ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
+      fetchPromotions();
+    } catch (error) {
+      toast.error('Failed to update promotion status');
     }
   };
 
@@ -325,6 +328,17 @@ const PromotionManager = () => {
             />
           </div>
 
+          <div className="form-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={formData.isActive}
+                onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+              />
+              <span>Active (Enable this promotion)</span>
+            </label>
+          </div>
+
           {formData.scope === 'ORDER' && (
             <div className="form-group">
               <label>Minimum Order Total</label>
@@ -417,7 +431,12 @@ const PromotionManager = () => {
           <div className="promotion-cards">
             {promotions.map(promo => (
               <div key={promo._id} className="promotion-card">
-                <h4>{promo.name}</h4>
+                <div className="promotion-header">
+                  <h4>{promo.name}</h4>
+                  <span className={`status-badge ${promo.isActive ? 'active' : 'inactive'}`}>
+                    {promo.isActive ? '🟢 Active' : '🔴 Inactive'}
+                  </span>
+                </div>
                 <p>{promo.description}</p>
                 <div className="promotion-details">
                   <span>Type: {promo.type}</span>
@@ -426,6 +445,12 @@ const PromotionManager = () => {
                   <span>Valid: {new Date(promo.startDate).toLocaleDateString()} - {new Date(promo.endDate).toLocaleDateString()}</span>
                 </div>
                 <div className="promotion-actions">
+                  <button
+                    onClick={() => handleToggleActive(promo._id, promo.isActive)}
+                    className={`btn-toggle ${promo.isActive ? 'btn-disable' : 'btn-enable'}`}
+                  >
+                    {promo.isActive ? 'Disable' : 'Enable'}
+                  </button>
                   <button onClick={() => handleEdit(promo)} className="btn-edit">Edit</button>
                   <button onClick={() => handleDelete(promo._id)} className="btn-delete">Delete</button>
                 </div>
