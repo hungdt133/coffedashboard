@@ -46,7 +46,7 @@ router.get("/stats/revenue", async (req, res) => {
       { $unwind: "$items" },
       {
         $group: {
-          _id: "$items.name",
+          _id: "$items.productName",
           totalSold: { $sum: "$items.quantity" }
         }
       },
