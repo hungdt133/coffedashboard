@@ -225,7 +225,9 @@ router.post("/", async (req, res) => {
         if (scope === "CATEGORY") promotionData.categories = categories;
         if (scope === "COMBO") promotionData.comboItems = comboItems;
 
-        const promotion = await Promotion.create(promotionData);
+        // Create promotion using new Promotion() instead of Promotion.create()
+        const promotion = new Promotion(promotionData);
+        await promotion.save();
 
         res.status(201).json(promotion);
     } catch (err) {

@@ -63,17 +63,31 @@ const PromotionManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Validation
+      if (!formData.name.trim()) {
+        toast.error('Tên promotion là bắt buộc');
+        return;
+      }
+      if (!formData.value || isNaN(parseFloat(formData.value))) {
+        toast.error('Giá trị promotion phải là số hợp lệ');
+        return;
+      }
+      if (!formData.startDate || !formData.endDate) {
+        toast.error('Ngày bắt đầu và kết thúc là bắt buộc');
+        return;
+      }
+
       const data = { ...formData };
       // Convert strings to numbers
-      if (data.value) data.value = parseFloat(data.value);
+      data.value = parseFloat(data.value);
       if (data.minOrderTotal) data.minOrderTotal = parseFloat(data.minOrderTotal);
-      if (data.productIds.length > 0) data.productIds = data.productIds.map(id => id.trim());
-      if (data.categories.length > 0) data.categories = data.categories.map(cat => cat.trim());
+      if (data.productIds.length > 0) data.productIds = data.productIds.map(id => id.trim()).filter(id => id);
+      if (data.categories.length > 0) data.categories = data.categories.map(cat => cat.trim()).filter(cat => cat);
       if (data.comboItems.length > 0) {
         data.comboItems = data.comboItems.map(item => ({
           productId: item.productId.trim(),
           requiredQty: parseInt(item.requiredQty)
-        }));
+        })).filter(item => item.productId && item.requiredQty > 0);
       }
 
       if (editingPromotion) {
@@ -86,6 +100,7 @@ const PromotionManager = () => {
       fetchPromotions();
       resetForm();
     } catch (error) {
+      console.error('Promotion save error:', error);
       toast.error(error.response?.data?.error || 'Failed to save promotion');
     }
   };

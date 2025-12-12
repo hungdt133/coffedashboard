@@ -64,23 +64,27 @@ const PromotionSchema = new mongoose.Schema({
 });
 
 // Validation: ensure correct fields are present based on scope
-PromotionSchema.pre("save", function(next) {
-    // Skip validation for isActive-only updates
-    if (this.isModified() && Object.keys(this.modifiedPaths()).length === 1 && this.isModified('isActive')) {
-        return next();
-    }
+// PromotionSchema.pre("save", function(next) {
+//     try {
+//         // Skip validation for isActive-only updates
+//         if (this.isModified && this.isModified() && Object.keys(this.modifiedPaths()).length === 1 && this.isModified('isActive')) {
+//             return next();
+//         }
 
-    if (this.scope === "PRODUCT" && (!this.productIds || this.productIds.length === 0)) {
-        return next(new Error("productIds is required for PRODUCT scope"));
-    }
-    if (this.scope === "CATEGORY" && (!this.categories || this.categories.length === 0)) {
-        return next(new Error("categories is required for CATEGORY scope"));
-    }
-    if (this.scope === "COMBO" && (!this.comboItems || this.comboItems.length === 0)) {
-        return next(new Error("comboItems is required for COMBO scope"));
-    }
-    next();
-});
+//         if (this.scope === "PRODUCT" && (!this.productIds || this.productIds.length === 0)) {
+//             return next(new Error("productIds is required for PRODUCT scope"));
+//         }
+//         if (this.scope === "CATEGORY" && (!this.categories || this.categories.length === 0)) {
+//             return next(new Error("categories is required for CATEGORY scope"));
+//         }
+//         if (this.scope === "COMBO" && (!this.comboItems || this.comboItems.length === 0)) {
+//             return next(new Error("comboItems is required for COMBO scope"));
+//         }
+//         next();
+//     } catch (error) {
+//         next(error);
+//     }
+// });
 
 // Method to check if promotion is currently valid
 PromotionSchema.methods.isValid = function() {

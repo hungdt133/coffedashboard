@@ -24,7 +24,7 @@ const server = http.createServer(app);
 app.use(express.json()); // Để parse JSON request bodies
 app.use(morgan("dev")); // Để log các request HTTP
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174"], // Cho phép yêu cầu từ frontend của bạn
+  origin: ["https://coffeeshop-mobileappproject-backend.onrender.com"], // Cho phép yêu cầu từ frontend của bạn
   methods: ["GET", "POST", "PUT", "DELETE"], // Các phương thức HTTP được phép
   credentials: true, // Cho phép gửi cookies và header authorization
 }));
@@ -32,7 +32,7 @@ app.use(cors({
 // ⚡ Socket.io
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: ["https://coffeeshop-mobileappproject-backend.onrender.com"],
     methods: ["GET", "POST"],
     credentials: true,
   },
