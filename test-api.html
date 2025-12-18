@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test FCM API</title>
+</head>
+<body>
+    <h1>Test POST to FCM API</h1>
+    <button onclick="testPost()">Test POST Request</button>
+    <div id="result"></div>
+
+    <script>
+        async function testPost() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Sending POST request...';
+
+            try {
+                const response = await fetch('https://coffeeshop-mobileappproject-backend.onrender.com/fcm/sendallclient', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: 'Test from Browser',
+                        body: 'This is a test message from browser'
+                    })
+                });
+
+                const data = await response.text();
+                resultDiv.innerHTML = `
+                    <h3>Response:</h3>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Data:</strong> ${data}</p>
+                    <p><strong>OK:</strong> ${response.ok}</p>
+                `;
+
+                if (response.ok) {
+                    resultDiv.style.color = 'green';
+                } else {
+                    resultDiv.style.color = 'red';
+                }
+
+            } catch (error) {
+                resultDiv.innerHTML = `<h3 style="color: red;">Error:</h3><p>${error.message}</p>`;
+                resultDiv.style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>
