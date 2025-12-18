@@ -16,6 +16,9 @@ const orderRoutes = require("./routes/orders.routes");
 // Routes (promotions)
 const promotionRoutes = require("./routes/promotions.routes");
 
+// Routes (notifications)
+const notificationRoutes = require("./routes/notifications.routes");
+
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
@@ -24,7 +27,11 @@ const server = http.createServer(app);
 app.use(express.json()); // Để parse JSON request bodies
 app.use(morgan("dev")); // Để log các request HTTP
 app.use(cors({
-  origin: ["https://coffeeshop-mobileappproject-backend.onrender.com"], // Cho phép yêu cầu từ frontend của bạn
+  origin: [
+    "http://localhost:5173", // Frontend local development
+    "http://localhost:5174", // Alternative port
+    "https://coffeeshop-mobileappproject-backend.onrender.com" // Production
+  ], // Cho phép yêu cầu từ frontend của bạn
   methods: ["GET", "POST", "PUT", "DELETE"], // Các phương thức HTTP được phép
   credentials: true, // Cho phép gửi cookies và header authorization
 }));
@@ -32,7 +39,11 @@ app.use(cors({
 // ⚡ Socket.io
 const io = new Server(server, {
   cors: {
-    origin: ["https://coffeeshop-mobileappproject-backend.onrender.com"],
+    origin: [
+      "http://localhost:5173", // Frontend local development
+      "http://localhost:5174", // Alternative port
+      "https://coffeeshop-mobileappproject-backend.onrender.com" // Production
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -120,6 +131,11 @@ app.use("/orders", orderRoutes);
 // 📦 ROUTES (Promotions)
 // ================================
 app.use("/promotions", promotionRoutes);
+
+// ================================
+// 📦 ROUTES (Notifications)
+// ================================
+app.use("/notifications", notificationRoutes);
 
 // Test
 app.get("/testconnection", (req, res) => res.json("OK"));

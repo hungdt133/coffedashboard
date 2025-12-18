@@ -290,15 +290,20 @@
 .notification-toast {
     position: fixed;
     top: 20px; right: 20px;
-    background: #2c3e50;
-    color: white;
+    background: #ffffff; /* Nền trắng */
+    color: #333333; /* Chữ màu đen */
     padding: 15px;
     border-radius: 8px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    border: 1px solid #ddd;
     z-index: 2000;
     min-width: 250px;
     animation: slideInRight 0.3s;
 }
 @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
-.notification-content { display: flex; justify-content: space-between; align-items: center; }
-.notification-close { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+.notification-content { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.notification-icon { font-size: 1.5rem; color: #667eea; }
+.notification-text { flex: 1; }
+.notification-text strong { display: block; margin-bottom: 5px; color: #333; }
+.notification-details { font-size: 0.9rem; color: #666; display: flex; gap: 5px; align-items: center; }
+.notification-close { background: none; border: none; color: #666; font-size: 1.5rem; cursor: pointer; padding: 0; }
