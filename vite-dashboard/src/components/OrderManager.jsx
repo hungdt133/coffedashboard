@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import { io } from "socket.io-client";
+import { toast } from 'react-toastify';
 import "./OrderManager.css";
 
 // Import hình ảnh
@@ -33,9 +34,12 @@ const OrderManager = () => {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterKeyword, setFilterKeyword] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
   const socketRef = useRef(null);
+  const [lastOrderId, setLastOrderId] = useState(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  const API_URL = "http://localhost:3000";
+  const API_URL = "";
 
   const getProductImage = (productName) => {
     if (!productName) return imgCaPheDen; 
@@ -74,6 +78,7 @@ const OrderManager = () => {
       if (filterCity) params.city = filterCity;
       if (filterDistrict) params.district = filterDistrict;
       if (filterWard) params.ward = filterWard;
+      if (filterStatus) params.status = filterStatus;
       if (filterPayment) params.paymentMethod = filterPayment;
       if (filterDateFrom) params.date_from = filterDateFrom;
       if (filterDateTo) params.date_to = filterDateTo;
@@ -84,13 +89,48 @@ const OrderManager = () => {
         new Date(b.orderDate) - new Date(a.orderDate)
       );
       setOrders(sortedOrders);
+
+      // Check for new order notification
+      if (!hasLoaded) {
+        setHasLoaded(true);
+      } else if (lastOrderId && sortedOrders.length > 0 && sortedOrders[0]._id !== lastOrderId) {
+        // Show notification for new order
+        const newOrder = sortedOrders[0];
+        const note = {
+          id: newOrder._id,
+          message: "Có đơn hàng mới!",
+          order: newOrder,
+          timestamp: newOrder.createdAt || new Date().toISOString(),
+        };
+        setNotificationsList((prev) => [note, ...prev]);
+        setUnreadCount((c) => c + 1);
+        setNotification({ ...note });
+
+        // Show toast notification
+        toast.success("Có đơn hàng mới!");
+
+        // Desktop notification
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          const title = 'Có đơn hàng mới!';
+          const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(newOrder.totalAmount || 0);
+          const body = `Khách: ${newOrder.deliveryAddress?.fullName || 'Khách vãng lai'} • Tổng: ${money}`;
+          new Notification(title, { body });
+        }
+        playBeep();
+
+        // Auto hide
+        setTimeout(() => {
+          setNotification(null);
+        }, 5000);
+      }
+      setLastOrderId(sortedOrders.length > 0 ? sortedOrders[0]._id : null);
     } catch (error) {
       console.error("Lỗi tải đơn hàng:", error);
       alert("Không thể kết nối đến server!");
     } finally {
       setLoading(false);
     }
-  }, [API_URL, filterCity, filterDistrict, filterWard, filterPayment, filterDateFrom, filterDateTo, filterKeyword]);
+  }, [API_URL, filterCity, filterDistrict, filterWard, filterStatus, filterPayment, filterDateFrom, filterDateTo, filterKeyword]);
   
   // request Notification permission on mount
   useEffect(() => {
@@ -117,62 +157,74 @@ const OrderManager = () => {
   useEffect(() => {
     fetchOrders();
 
-    // Kết nối Socket.io
-    socketRef.current = io(API_URL, {
-      transports: ["websocket", "polling"]
-    });
+    // Socket.io disabled due to CORS on production
+    // if (window.socket) {
+    //   socketRef.current = window.socket;
+    // } else {
+    //   socketRef.current = io('https://coffeeshop-mobileappproject-backend.onrender.com/', {
+    //     transports: ["websocket", "polling"]
+    //   });
+    // }
 
-    socketRef.current.on("connect", () => {
-      console.log("✅ Connected to Socket.io server");
-    });
+    // socketRef.current.on("connect", () => {
+    //   console.log("✅ Connected to Socket.io server");
+    // });
 
-    // Listen event đơn hàng mới
-    socketRef.current.on("newOrder", (data) => {
-      console.log("📦 New order received:", data);
+    // // Listen event đơn hàng mới
+    // socketRef.current.on("newOrder", (data) => {
+    //   console.log("📦 New order received:", data);
       
-      // Hiển thị notification
-      const note = {
-        id: data.order?._id || Date.now().toString(),
-        message: data.message || "Có đơn hàng mới!",
-        order: data.order,
-        timestamp: data.timestamp || new Date().toISOString(),
-      };
+    //   // Hiển thị notification
+    //   const note = {
+    //     id: data.order?._id || Date.now().toString(),
+    //     message: data.message || "Có đơn hàng mới!",
+    //     order: data.order,
+    //     timestamp: data.timestamp || new Date().toISOString(),
+    //   };
 
-      setNotificationsList((prev) => [note, ...prev]);
-      setUnreadCount((c) => c + 1);
-      setNotification({ ...note });
+    //   setNotificationsList((prev) => [note, ...prev]);
+    //   setUnreadCount((c) => c + 1);
+    //   setNotification({ ...note });
 
-      // Desktop notification + sound
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        try {
-          const title = note.message || 'Có đơn hàng mới!';
-          const money = note.order ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(note.order.totalAmount || 0) : '';
-          const body = note.order ? `Khách: ${note.order.deliveryAddress?.fullName || 'Khách vãng lai'} • Tổng: ${money}` : '';
-          new Notification(title, { body });
-        } catch (e) {}
-      }
-      playBeep();
+    //   // Desktop notification + sound
+    //   if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    //     try {
+    //       const title = note.message || 'Có đơn hàng mới!';
+    //       const money = note.order ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(note.order.totalAmount || 0) : '';
+    //       const body = note.order ? `Khách: ${note.order.deliveryAddress?.fullName || 'Khách vãng lai'} • Tổng: ${money}` : '';
+    //       new Notification(title, { body });
+    //     } catch (e) {}
+    //   }
+    //   playBeep();
 
-      // Tự động refresh danh sách đơn hàng
-      fetchOrders();
+    //   // Tự động refresh danh sách đơn hàng
+    //   fetchOrders();
 
-      // Tự động ẩn notification sau 5 giây
-      setTimeout(() => {
-        setNotification(null);
-      }, 5000);
-    });
+    //   // Tự động ẩn notification sau 5 giây
+    //   setTimeout(() => {
+    //     setNotification(null);
+    //   }, 5000);
+    // });
 
-    socketRef.current.on("disconnect", () => {
-      console.log("❌ Disconnected from Socket.io server");
-    });
+    // socketRef.current.on("disconnect", () => {
+    //   console.log("❌ Disconnected from Socket.io server");
+    // });
 
-    // Cleanup khi component unmount
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
+    // // Cleanup khi component unmount
+    // return () => {
+    //   if (socketRef.current) {
+    //     socketRef.current.disconnect();
+    //   }
+    // };
   }, [fetchOrders]);
+
+  // Polling disabled - only manual refresh
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     fetchOrders();
+  //   }, 20000);
+  //   return () => clearInterval(interval);
+  // }, [fetchOrders]);
 
   const handleBellClick = () => {
     setShowNotifPanel((s) => !s);
@@ -243,6 +295,9 @@ const OrderManager = () => {
 
       <div className="order-header">
         <h2 className="page-title">📦 Quản Lý Đơn Hàng</h2>
+        <button className="btn-refresh" onClick={() => fetchOrders()} title="Làm mới danh sách đơn hàng">
+          🔄 Làm mới
+        </button>
 
         <div className="notif-area">
           <button className="notif-bell" onClick={handleBellClick} aria-label="Thông báo">
@@ -281,6 +336,29 @@ const OrderManager = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Filter Section */}
+      <div className="filter-section">
+        <div className="filter-group">
+          <label>Trạng thái:</label>
+          <select 
+            value={filterStatus} 
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="filter-select"
+          >
+            <option value="">Tất cả</option>
+            <option value="Pending">🕒 Chờ xác nhận</option>
+            <option value="Confirmed">✅ Đã xác nhận</option>
+            <option value="Delivering">🚚 Đang giao</option>
+            <option value="Delivered">🎁 Đã giao</option>
+            <option value="Completed">🏁 Hoàn thành</option>
+            <option value="Cancelled">❌ Hủy đơn</option>
+          </select>
+        </div>
+        <button className="btn-filter" onClick={() => fetchOrders()}>
+          🔍 Tìm kiếm
+        </button>
       </div>
 
       {/* Notification khi có đơn hàng mới */}

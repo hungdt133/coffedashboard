@@ -21,7 +21,7 @@ const ComboManager = () => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
 
-  const API_URL = "http://localhost:3000";
+  const API_URL = "";
 
   const fetchCombos = async () => {
     try {

@@ -38,7 +38,7 @@ const PromotionManager = () => {
 
   const fetchPromotions = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/promotions');
+      const response = await axios.get('/promotions');
       setPromotions(response.data);
       calculateStats(response.data);
     } catch (error) {
@@ -91,10 +91,10 @@ const PromotionManager = () => {
       }
 
       if (editingPromotion) {
-        await axios.put(`http://localhost:3000/promotions/${editingPromotion._id}`, data);
+        await axios.put(`/promotions/${editingPromotion._id}`, data);
         toast.success('Promotion updated successfully');
       } else {
-        await axios.post('http://localhost:3000/promotions', data);
+        await axios.post('/promotions', data);
         toast.success('Promotion created successfully');
       }
       fetchPromotions();
@@ -145,13 +145,24 @@ const PromotionManager = () => {
 
   const handleToggleActive = async (promotionId, currentStatus) => {
     try {
-      await axios.put(`http://localhost:3000/promotions/${promotionId}`, {
+      await axios.put(`/promotions/${promotionId}`, {
         isActive: !currentStatus
       });
       toast.success(`Promotion ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
       fetchPromotions();
     } catch (error) {
       toast.error('Failed to update promotion status');
+    }
+  };
+
+  const handleDelete = async (promotionId) => {
+    if (!window.confirm('Are you sure you want to delete this promotion?')) return;
+    try {
+      await axios.delete(`/promotions/${promotionId}`);
+      toast.success('Promotion deleted successfully');
+      fetchPromotions();
+    } catch (error) {
+      toast.error('Failed to delete promotion');
     }
   };
 

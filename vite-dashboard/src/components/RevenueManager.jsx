@@ -33,7 +33,7 @@ const RevenueManager = () => {
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState('day'); // 'day', 'month', 'year'
 
-  const API_URL = "http://localhost:3000"; // Đổi port nếu cần
+  const API_URL = "https://coffeeshop-mobileappproject-backend.onrender.com";
 
   useEffect(() => {
     fetchStats();
@@ -42,11 +42,60 @@ const RevenueManager = () => {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      // Gọi API vừa tạo ở Bước 2
-      const res = await axios.get(`${API_URL}/orders/stats/revenue`, {
-        params: { type: timeFilter }
+      // Fetch all orders (since status filter may not work on production)
+      const res = await axios.get(`${API_URL}/orders/filter`);
+      const allOrders = res.data;
+      const orders = allOrders.filter(order => order.status === 'Delivered');
+
+      // Calculate chartData
+      const chartMap = new Map();
+      orders.forEach(order => {
+        const date = new Date(order.orderDate);
+        let key;
+        if (timeFilter === 'month') {
+          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        } else if (timeFilter === 'year') {
+          key = `${date.getFullYear()}`;
+        } else {
+          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+        if (!chartMap.has(key)) {
+          chartMap.set(key, { revenue: 0, count: 0 });
+        }
+        const entry = chartMap.get(key);
+        entry.revenue += order.totalAmount || 0;
+        entry.count += 1;
       });
-      setStats(res.data);
+      const chartData = Array.from(chartMap.entries()).map(([key, value]) => ({
+        _id: key,
+        revenue: value.revenue,
+        count: value.count
+      })).sort((a, b) => a._id.localeCompare(b._id));
+
+      // Calculate summary
+      const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+      const totalOrders = orders.length;
+      const summary = { totalRevenue, totalOrders };
+
+      // Calculate topProducts
+      const productMap = new Map();
+      orders.forEach(order => {
+        if (order.items) {
+          order.items.forEach(item => {
+            const name = item.productName || 'Unknown';
+            if (!productMap.has(name)) {
+              productMap.set(name, 0);
+            }
+            productMap.set(name, productMap.get(name) + (item.quantity || 0));
+          });
+        }
+      });
+      const topProducts = Array.from(productMap.entries())
+        .map(([name, totalSold]) => ({ _id: name, totalSold }))
+        .sort((a, b) => b.totalSold - a.totalSold)
+        .slice(0, 5);
+
+      setStats({ chartData, summary, topProducts });
     } catch (error) {
       console.error("Lỗi tải thống kê:", error);
     } finally {
