@@ -16,6 +16,13 @@ export default defineConfig({
       '/orders': 'http://localhost:3000',
       '/users': 'http://localhost:3000',
       '/login': 'http://localhost:3000',
+      // Proxy cho external FCM API để bypass CORS
+      '/fcm': {
+        target: 'https://coffeeshop-mobileappproject-backend.onrender.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/fcm/, '/fcm'),
+      },
     }
   }
 })

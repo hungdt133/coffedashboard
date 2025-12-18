@@ -24,6 +24,7 @@
 .sender-header p {
   color: #666;
   font-size: 1rem;
+  font-style: italic;
 }
 
 /* --- FORM STYLES --- */
@@ -94,6 +95,26 @@
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
+}
+
+.test-btn {
+  width: auto;
+  padding: 12px 20px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  margin-right: 10px;
+}
+
+.test-btn:hover:not(:disabled) {
+  background: #138496;
+  transform: translateY(-1px);
 }
 
 /* --- PREVIEW SECTION --- */
@@ -176,4 +197,65 @@
   .preview-icon {
     align-self: center;
   }
+}
+
+/* --- MOBILE NOTIFICATION PREVIEW --- */
+.mobile-notification-preview {
+  background: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  max-width: 350px;
+  margin: 0 auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.mobile-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.app-info strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.app-info small {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.mobile-content {
+  padding: 16px;
+  background: white;
+}
+
+.notification-title {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.notification-body {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.4;
 }
